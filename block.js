@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         知乎屏蔽指定用户
 // @namespace    Shurlormes
-// @version      0.1
+// @version      0.2
 // @description  知乎屏蔽指定用户，将他的评论隐藏。
 // @author       Shurlormes
-// @match        *://*.zhihu.com/question/*
+// @match        *://*.zhihu.com/*
 // @icon         https://static.zhihu.com/heifetz/favicon.ico
 // @grant        none
 // @license      GPL-3.0
@@ -23,6 +23,7 @@
     const USER_NAME_COMPONENT_CLASS = 'shurlormes-user-name-component';
     const BTN_APPENDED_COMPONENT_CLASS = 'shurlormes-btn-appended-component';
     const USER_COMMENT_COMPONENT_CLASS = 'shurlormes-user-comment-component';
+    const USER_COMMENT_COMPONENT_WITH_ID_CLASS = 'shurlormes-user-comment-component-';
     const HIDE_USER_COMMENT_COMPONENT_CLASS = "shurlormes-hide-user-comment-component-";
     const HIDE_CLASS = 'shurlormes-hide';
     const ATTR_USER_ID = 'shurlormes-user-id';
@@ -40,6 +41,8 @@
     const TYPE_BLOCK = 0;
     const TYPE_CANCEL = 1;
     const TYPE_BTN_CLASS = [BLOCK_BTN_CLASS, CANCEL_BTN_CLASS]
+    const TYPE_BTN_STYLE = [BLOCK_BTN_STYLE, CANCEL_BTN_STYLE]
+    const TYPE_BTN_TXT = [BLOCK_BTN_TXT, CANCEL_BTN_TXT]
 
 
     let showCancelUserComment = function(cancelUserId) {
@@ -55,8 +58,7 @@
         }
     }
 
-    let hideBlockedUserComment = function() {
-        let commentComponents = document.querySelectorAll(`.${USER_COMMENT_COMPONENT_CLASS}:not(.${HIDE_CLASS})`)
+    let hideAndStoreComment = function(commentComponents) {
         if(commentComponents.length > 0) {
             for (let i = 0; i < commentComponents.length; i++) {
                 let commentComponent = commentComponents[i];
@@ -76,13 +78,21 @@
         }
     }
 
-    let changeBtn = function(userId, type) {
-        let btns = document.getElementsByClassName(TYPE_BTN_CLASS[type] + userId);
-        for (let i = 0; i < btns.length; i++) {
-            btns[i].hidden = true;
+    let hideBlockedUserComment = function(blockUserId) {
+        if(!blockUserId) {
+            let commentComponents = document.querySelectorAll(`.${USER_COMMENT_COMPONENT_CLASS}:not(.${HIDE_CLASS})`)
+            hideAndStoreComment(commentComponents);
+        } else {
+            let blockUserCommentComponents = document.getElementsByClassName(USER_COMMENT_COMPONENT_WITH_ID_CLASS + blockUserId);
+            hideAndStoreComment(blockUserCommentComponents);
         }
+    }
+
+    let toggleBtn = function(userId, type) {
+        let btns = document.getElementsByClassName(TYPE_BTN_CLASS[type] + userId);
         let revertBtns = document.getElementsByClassName(TYPE_BTN_CLASS[1 - type] + userId);
         for (let i = 0; i < btns.length; i++) {
+            btns[i].hidden = true;
             revertBtns[i].hidden = false;
         }
     }
@@ -94,8 +104,8 @@
         let userId = e.target.getAttribute(ATTR_USER_ID);
         localStorage.setItem(BLOCK_USER_KEY_PREFIX + userId, 1);
 
-        hideBlockedUserComment();
-        changeBtn(userId, TYPE_BLOCK);
+        hideBlockedUserComment(userId);
+        toggleBtn(userId, TYPE_BLOCK);
     }
 
     let cancelBtnClickEvent = function(e) {
@@ -106,10 +116,10 @@
         localStorage.removeItem(BLOCK_USER_KEY_PREFIX + userId);
 
         showCancelUserComment(userId);
-        changeBtn(userId, TYPE_CANCEL);
+        toggleBtn(userId, TYPE_CANCEL);
     }
 
-    let markBlockElements = function() {
+    let markComponents = function() {
         let commentComponents = document.querySelectorAll(`.${COMMENT_CONTENT_CLASS}:not(.${USER_COMMENT_COMPONENT_CLASS})`)
         if(commentComponents.length > 0) {
             for (let i = 0; i < commentComponents.length; i++) {
@@ -127,49 +137,44 @@
                 userComponent.setAttribute(ATTR_USER_ID, userId);
 
                 commentComponent.classList.add(USER_COMMENT_COMPONENT_CLASS);
+                commentComponent.classList.add(USER_COMMENT_COMPONENT_WITH_ID_CLASS + userId);
                 commentComponent.setAttribute(ATTR_USER_ID, userId);
             }
         }
     }
 
-    let appendBlockBtn = function() {
+    let appendBtn = function(component, userId, type) {
+        let hasBlocked = localStorage.getItem(BLOCK_USER_KEY_PREFIX + userId);
+        let blockBtn = document.createElement("span");
+        blockBtn.setAttribute(ATTR_USER_ID, userId);
+        blockBtn.classList.add(BTN_GROUP_CLASS)
+        blockBtn.classList.add(TYPE_BTN_CLASS[type] + userId)
+        blockBtn.style = TYPE_BTN_STYLE[type];
+        blockBtn.innerText = TYPE_BTN_TXT[type];
+        blockBtn.onclick = type === 0 ? blockBtnClickEvent : cancelBtnClickEvent;
+        blockBtn.hidden = type === 0 ? hasBlocked : !hasBlocked
+
+        component.appendChild(blockBtn);
+        component.classList.add(BTN_APPENDED_COMPONENT_CLASS);
+    }
+
+    let appendClickBtn = function() {
         let userNameComponents = document.querySelectorAll(`.${USER_NAME_COMPONENT_CLASS}:not(.${BTN_APPENDED_COMPONENT_CLASS})`);
         if(userNameComponents.length > 0) {
             for (let i = 0; i < userNameComponents.length; i++) {
                 let userNameComponent = userNameComponents[i];
                 let userId = userNameComponent.getAttribute(ATTR_USER_ID);
                 if(userNameComponent.getElementsByClassName(BTN_GROUP_CLASS).length === 0) {
-                    let hasBlocked = localStorage.getItem(BLOCK_USER_KEY_PREFIX + userId);
-
-                    let blockBtn = document.createElement("span");
-                    blockBtn.setAttribute(ATTR_USER_ID, userId);
-                    blockBtn.classList.add(BTN_GROUP_CLASS)
-                    blockBtn.classList.add(BLOCK_BTN_CLASS + userId)
-                    blockBtn.style = BLOCK_BTN_STYLE;
-                    blockBtn.innerText = BLOCK_BTN_TXT;
-                    blockBtn.onclick = blockBtnClickEvent;
-                    blockBtn.hidden = hasBlocked
-
-                    let cancelBtn = document.createElement("span");
-                    cancelBtn.setAttribute(ATTR_USER_ID, userId);
-                    cancelBtn.classList.add(BTN_GROUP_CLASS)
-                    cancelBtn.classList.add(CANCEL_BTN_CLASS + userId)
-                    cancelBtn.style = CANCEL_BTN_STYLE;
-                    cancelBtn.innerText = CANCEL_BTN_TXT;
-                    cancelBtn.onclick = cancelBtnClickEvent;
-                    cancelBtn.hidden = !hasBlocked
-
-                    userNameComponent.appendChild(blockBtn);
-                    userNameComponent.appendChild(cancelBtn);
-                    userNameComponent.classList.add(BTN_APPENDED_COMPONENT_CLASS);
+                    appendBtn(userNameComponent, userId, TYPE_BLOCK);
+                    appendBtn(userNameComponent, userId, TYPE_CANCEL);
                 }
             }
         }
     }
 
     let mainEvent = function() {
-        markBlockElements();
-        appendBlockBtn();
+        markComponents();
+        appendClickBtn();
         hideBlockedUserComment();
     }
 
