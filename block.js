@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         知乎屏蔽指定用户
+// @name         知乎屏蔽用户评论
 // @namespace    Shurlormes
 // @version      0.2
 // @description  知乎屏蔽指定用户，将他的评论隐藏。
