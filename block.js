@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         知乎屏蔽用户评论
 // @namespace    Shurlormes
-// @version      0.5
+// @version      0.6
 // @description  知乎屏蔽指定用户，将他的评论隐藏。
 // @author       Shurlormes
 // @match        *://*.zhihu.com/*
@@ -418,26 +418,27 @@
                 let commentComponent = commentComponents[i];
                 let userRightComponent = commentComponent.parentElement;
                 let userComponent = userRightComponent.parentElement;
-                let popover = userRightComponent.getElementsByClassName('Popover');
-                if(popover.length > 0) {
-                    let userNameComponent = popover[0].parentElement;
 
-                    let aTag = userNameComponent.getElementsByTagName('a');
-                    if(aTag.length > 0) {
-                        let userHref = aTag[0].getAttribute('href');
-                        let userId = userHref.substr(userHref.lastIndexOf("/") + 1)
+                if(userRightComponent.firstChild) {
+                    let userNameComponent = userRightComponent.firstChild.firstChild;
+                    if(userNameComponent) {
+                        let aTag = userNameComponent.getElementsByTagName('a');
+                        if(aTag.length > 0) {
+                            let userHref = aTag[0].getAttribute('href');
+                            let userId = userHref.substr(userHref.lastIndexOf("/") + 1)
 
-                        userNameComponent.classList.add(USER_NAME_COMPONENT_CLASS);
-                        userNameComponent.setAttribute(ATTR_USER_ID, userId);
+                            userNameComponent.classList.add(USER_NAME_COMPONENT_CLASS);
+                            userNameComponent.setAttribute(ATTR_USER_ID, userId);
 
-                        userRightComponent.classList.add(USER_RIGHT_COMPONENT_CLASS);
-                        userRightComponent.setAttribute(ATTR_USER_ID, userId);
+                            userRightComponent.classList.add(USER_RIGHT_COMPONENT_CLASS);
+                            userRightComponent.setAttribute(ATTR_USER_ID, userId);
 
-                        userComponent.classList.add(USER_COMPONENT_CLASS)
+                            userComponent.classList.add(USER_COMPONENT_CLASS)
 
-                        commentComponent.classList.add(USER_COMMENT_COMPONENT_CLASS);
-                        commentComponent.classList.add(USER_COMMENT_COMPONENT_WITH_ID_CLASS + userId);
-                        commentComponent.setAttribute(ATTR_USER_ID, userId);
+                            commentComponent.classList.add(USER_COMMENT_COMPONENT_CLASS);
+                            commentComponent.classList.add(USER_COMMENT_COMPONENT_WITH_ID_CLASS + userId);
+                            commentComponent.setAttribute(ATTR_USER_ID, userId);
+                        }
                     }
                 }
             }
